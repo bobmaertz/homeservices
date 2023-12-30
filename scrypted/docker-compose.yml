@@ -1,0 +1,61 @@
+version: "3.5"
+
+services:
+    scrypted:
+        image: koush/scrypted
+        environment:
+          # - SCRYPTED_WEBHOOK_UPDATE_AUTHORIZATION=Bearer XXXXXXXXXX
+            - SCRYPTED_WEBHOOK_UPDATE=http://localhost:10444/v1/update
+        container_name: scrypted
+        restart: unless-stopped
+        network_mode: host
+        volumes:
+            - ~/.scrypted/volume:/server/volume
+            # modify and add the additional volume for Scrypted NVR
+            # the following example would mount the /mnt/sda/video path on the host
+            # to the /nvr path inside the docker container.
+            # - /mnt/sda/video:/nvr
+
+            # or use a network mount from one of the examples above
+            # - type: volume
+            #   source: nvr
+            #   target: /nvr
+            #   volume:
+            #     nocopy: true
+
+            # uncomment the following lines to expose Avahi, an mDNS advertiser.
+            # make sure Avahi is running on the host machine, otherwise this will not work.
+            # - /var/run/dbus:/var/run/dbus
+            # - /var/run/avahi-daemon/socket:/var/run/avahi-daemon/socket
+        # logging is noisy and will unnecessarily wear on flash storage.
+        # scrypted has per device in memory logging that is preferred.
+        logging:
+            driver: "json-file"
+            options:
+                max-size: "10m"
+                max-file: "10"
+        labels:
+            - "com.centurylinklabs.watchtower.scope=scrypted"
+
+    # watchtower manages updates for Scrypted.
+    watchtower:
+        environment:
+          # - WATCHTOWER_HTTP_API_TOKEN=XXXXXX
+            - WATCHTOWER_HTTP_API_UPDATE=true
+            - WATCHTOWER_SCOPE=scrypted
+            # remove the following line to never allow docker to auto update.
+            # this is not recommended.
+            - WATCHTOWER_HTTP_API_PERIODIC_POLLS=true
+        image: containrrr/watchtower
+        container_name: scrypted-watchtower
+        restart: unless-stopped
+        volumes:
+            - /var/run/docker.sock:/var/run/docker.sock
+        labels:
+            - "com.centurylinklabs.watchtower.scope=scrypted"
+        ports:
+            # The auto update port 10444 can be configured
+            # Must match the port in the auto update url above.
+            - 10444:8080
+        # check for updates once an hour (interval is in seconds)
+        command: --interval 3600 --cleanup --scope scrypted
