@@ -1,0 +1,16 @@
+
+services:
+  grafana:
+    image: grafana/grafana:latest
+    restart: always
+    user: "1000" # needs to be `id -u` // alternatively chown the grafana/data dir to 472:472
+    ports:
+      - "3000:3000" # expose for localhost
+    volumes:
+      - $HOME/grafana/data:/var/lib/grafana # data path
+      - $HOME/grafana/grafana.ini:/etc/grafana/grafana.ini
+      - $HOME/grafana/provisioning:/etc/grafana/provisioning
+    environment:
+      - GF_INSTALL_PLUGINS=grafana-clock-panel,grafana-simple-json-datasource
+      - GF_SECURITY_ADMIN_USER=${GF_SECURITY_ADMIN_USER}
+      - GF_SECURITY_ADMIN_PASSWORD=${GF_SECURITY_ADMIN_PASSWORD}
