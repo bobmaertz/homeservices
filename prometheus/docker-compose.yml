@@ -1,0 +1,12 @@
+
+services:
+  prometheus:
+    image: prom/prometheus:latest
+    restart: always
+    user: "1000" # needs to be `id -u` // alternatively chown the grafana/data dir to 472:472
+    ports:
+      - 9090:9090 
+    volumes:
+      - $HOME/prometheus/config:/etc/prometheus
+      - $HOME/prometheus/data:/prometheus
+
